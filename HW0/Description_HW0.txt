@@ -1,0 +1,1 @@
+I created the download_pronto.bash script in my CSE583 directory, ran it to download and inspect the Pronto data, then added the script to my HW0 folder and pushed it to my GitHub repository, CSE583-HW. You can view all the contents in the GitHub repository at this URL. Thank you!
