@@ -1,5 +1,6 @@
 """Analyze Fremont Bridge bicycle counts for the CSE 583 HW1 assignment."""
 
+from datetime import datetime
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -10,12 +11,23 @@ DATA_FILE = Path(__file__).with_name("bicycle_data.csv")
 PLOT_FILE = Path(__file__).with_name("counts_by_hour.png")
 
 
+def decode_date(value):
+    """Decode the assignment's yyyy-mm-ddThh date or the CSV's date format."""
+    date_text = str(value)
+    if "T" in date_text:
+        return datetime.strptime(date_text, "%Y-%m-%dT%H")
+    if "\t" in date_text:
+        return datetime.strptime(date_text, "%Y-%m-%d\t%H")
+    return datetime.strptime(date_text, "%m/%d/%Y %I:%M:%S %p")
+
+
 def main():
     # Date is a timestamp (datetime64); the existing total, west, and east
     # sidewalk count columns are numeric counts (float64 because the CSV has
-    # missing observations). Parse the source Date text as datetime64.
+    # missing observations). Decode the date strings, then store the entire
+    # Date column as pandas datetime64 for date and time calculations.
     df = pd.read_csv(DATA_FILE)
-    df["Date"] = pd.to_datetime(df["Date"], format="%m/%d/%Y %I:%M:%S %p")
+    df["Date"] = pd.to_datetime(df["Date"].map(decode_date))
     west_column = "Fremont Bridge Sidewalks, south of N 34th St Cyclist West Sidewalk"
     east_column = "Fremont Bridge Sidewalks, south of N 34th St Cyclist East Sidewalk"
 
