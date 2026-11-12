@@ -1,1 +1,1 @@
-This repository is for homework of CSE courses.
+This repository is for homework of CSE583 courses.
