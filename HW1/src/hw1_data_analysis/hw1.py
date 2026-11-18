@@ -22,10 +22,11 @@ def decode_date(value):
 
 
 def main():
-    # Date is a timestamp (datetime64); the existing total, west, and east
-    # sidewalk count columns are numeric counts (float64 because the CSV has
-    # missing observations). Decode the date strings, then store the entire
-    # Date column as pandas datetime64 for date and time calculations.
+    # The CSV columns are Date (timestamp; should be datetime64[ns]), the
+    # reported total count, west sidewalk count, and east sidewalk count
+    # (all counts; should be integer values, with missing values allowed).
+    # Parse Date as datetime and store counts as nullable integers so missing
+    # observations remain NA without representing cyclist counts as floats.
     df = pd.read_csv(DATA_FILE)
     df["Date"] = pd.to_datetime(df["Date"].map(decode_date))
     west_column = "Fremont Bridge Sidewalks, south of N 34th St Cyclist West Sidewalk"
@@ -37,7 +38,9 @@ def main():
         west_column,
         east_column,
     ]
-    df[count_columns] = df[count_columns].apply(pd.to_numeric, errors="coerce")
+    df[count_columns] = df[count_columns].apply(
+        lambda column: pd.to_numeric(column, errors="coerce").astype("Int64")
+    )
 
     # Add the east + west count, hour of day, and calendar year.
     # min_count=2 prevents one-sided or fully missing observations from looking complete.
@@ -50,20 +53,22 @@ def main():
 
     missing_points = int(data_2016["Total Count"].isna().sum())
     # There is 1 time point with missing East/West count data in 2016; drop it
-    # so it cannot affect the hourly averages or busiest-hour calculation.
+    # so it cannot affect the plot or busiest-hour calculation.
     data_2016 = data_2016.dropna(subset=["Total Count"])
 
-    # Average counts for each clock hour over the 2016 observations.
-    average_counts_by_hour = data_2016.groupby("Hour")["Total Count"].mean()
-    average_counts_by_hour.plot(kind="bar", figsize=(10, 6))
-    plt.title("Average Fremont Bridge Bicycle Counts by Hour (2016)")
+    # Plot each 2016 hourly observation: clock hour on x, total East + West
+    # bicycle count for that observation on y.
+    plt.figure(figsize=(10, 6))
+    plt.scatter(data_2016["Hour"], data_2016["Total Count"], alpha=0.25, s=10)
+    plt.title("Fremont Bridge Bicycle Counts by Hour (2016)")
     plt.xlabel("Hour of Day")
-    plt.ylabel("Average Bicycle Count")
+    plt.ylabel("Total Bicycle Count")
     plt.xticks(rotation=0)
     plt.tight_layout()
     plt.savefig(PLOT_FILE)
     plt.close()
 
+    average_counts_by_hour = data_2016.groupby("Hour")["Total Count"].mean()
     busiest_hour = int(average_counts_by_hour.idxmax())
     # The busiest hour on average is 17:00 (5 PM).
     print(f"Missing 2016 time points: {missing_points}")
